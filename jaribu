@@ -1,0 +1,72 @@
+from flask import Flask, render_template, request
+from dotenv import load_dotenv
+import os
+import openai
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Retrieve the API key from the environment
+api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = api_key
+
+app = Flask(__name__)
+
+def generate_text(prompt, max_tokens=100, temperature=0.7):
+    try:
+        response = openai.Completion.create(
+            engine="text-codex-002",  # Codex model
+            prompt=prompt,
+            max_tokens=max_tokens,
+            temperature=temperature
+        )
+        
+        if 'choices' in response.data and len(response.data['choices']) > 0:
+            generated_text = response.data['choices'][0]['text']
+            return generated_text
+        else:
+            return "Failed to generate text. No response received from the API."
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    generated_text = None
+    if request.method == 'POST':
+        prompt = request.form['prompt']
+        generated_text = generate_text(prompt)
+    return render_template('index.html', generated_text=generated_text)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+==
+pip install python-dotenv
+
+
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
+
+
+==
+
+===
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Generator</title>
+</head>
+<body>
+    <h1>Text Generator</h1>
+    <form method="post">
+        <label for="prompt">Enter Prompt:</label><br>
+        <textarea id="prompt" name="prompt" rows="4" cols="50"></textarea><br>
+        <input type="submit" value="Generate Text">
+    </form>
+    {% if generated_text %}
+    <h2>Generated Text:</h2>
+    <p>{{ generated_text }}</p>
+    {% endif %}
+</body>
+</html>
